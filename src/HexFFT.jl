@@ -1,6 +1,8 @@
 module HexFFT
 
-export hfft2, ihfft2
+import Base: fft, ifft
+
+export hfft2, ihfft2, fft, ifft, OffsetHexData
 
 # HELPER FUNCTIONS
 pad_zeros(arr) = hcat(arr, zeros(arr))
@@ -56,5 +58,18 @@ function ihfft2(data0, data1)
     return 0.5(inst2(g00) .+ iw(0, size(g10)...) .* inst2(g10)),
            0.5(inst3(g01) .+ iw(1, size(g11)...) .* inst3(g11))
 end
+
+# Hex Array type
+immutable OffsetHexData{T, S <: AbstractArray{T, 2}}
+    odd_rows::S
+    even_rows::S
+end
+function OffsetHexData{S}(odd_rows::S, even_rows::S)
+    @assert size(odd_rows) == size(even_rows)
+    OffsetHexData{eltype(odd_rows), S}(odd_rows, even_rows)
+end
+
+fft(H::OffsetHexData) = OffsetHexData(hfft2(H.odd_rows, H.even_rows)...)
+ifft(H::OffsetHexData) = OffsetHexData(ihfft2(H.odd_rows, H.even_rows)...)
 
 end # module
